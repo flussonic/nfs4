@@ -124,6 +124,21 @@ enum nfsstat4 {
 };
 
 /*
+ * Additions
+ */
+typedef unsigned hyper uint64_t;
+typedef hyper int64_t;
+typedef unsigned uint32_t;
+typedef int int32_t;
+
+
+enum authsys {
+	AUTH_NONE = 0,
+	AUTH_SYS  = 1
+};
+
+
+/*
  * Basic data types
  */
 typedef uint32_t        bitmap4<>;
@@ -650,10 +665,13 @@ union createtype4 switch (nfs_ftype4 type) {
  case NF4LNK:
          linktext4      linkdata;
  case NF4BLK:
+	void;
  case NF4CHR:
          specdata4      devdata;
  case NF4SOCK:
+	void;
  case NF4FIFO:
+	void;
  case NF4DIR:
          void;
  default:
@@ -889,6 +907,7 @@ enum createmode4 {
 
 union createhow4 switch (createmode4 mode) {
  case UNCHECKED4:
+	void;
  case GUARDED4:
          fattr4         createattrs;
  case EXCLUSIVE4:
@@ -1316,9 +1335,11 @@ struct rpcsec_gss_info {
         rpc_gss_svc_t   service;
 };
 
-const RPCSEC_GSS = 6;
+enum rpcsec_t {
+	RPCSEC_GSS = 6
+};
 
-union secinfo4 switch (uint32_t flavor) {
+union secinfo4 switch (rpcsec_t flavor) {
  case RPCSEC_GSS:
          rpcsec_gss_info        flavor_info;
  default:
@@ -1447,7 +1468,7 @@ struct gss_cb_handles4 {
 };
 */
 
-union callback_sec_parms4 switch (uint32_t cb_secflavor) {
+union callback_sec_parms4 switch (authsys cb_secflavor) {
 case AUTH_NONE:
        void;
 case AUTH_SYS:
@@ -2150,13 +2171,13 @@ enum nfs_cb_opnum4 {
         OP_CB_ILLEGAL           = 10044
 };
 
-union nfs_cb_argop4 switch (unsigned argop) {
+union nfs_cb_argop4 switch (nfs_cb_opnum4 argop) {
  case OP_CB_GETATTR:    CB_GETATTR4args opcbgetattr;
  case OP_CB_RECALL:     CB_RECALL4args  opcbrecall;
  case OP_CB_ILLEGAL:    void;
 };
 
-union nfs_cb_resop4 switch (unsigned resop){
+union nfs_cb_resop4 switch (nfs_cb_opnum4 resop){
  case OP_CB_GETATTR:    CB_GETATTR4res  opcbgetattr;
  case OP_CB_RECALL:     CB_RECALL4res   opcbrecall;
  case OP_CB_ILLEGAL:    CB_ILLEGAL4res  opcbillegal;
