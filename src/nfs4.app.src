@@ -1,0 +1,9 @@
+{application, nfs4,
+ [
+  {description, "Nfs4"},
+  {vsn, "20.08.1"},
+  {registered, []},
+  {applications, [stdlib,kernel]},
+  {mod, {nfs4_app, []}},
+  {env, []}
+ ]}.
