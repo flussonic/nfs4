@@ -928,24 +928,48 @@ dec_authsys_i2a(_4) ->
 
 enc_bitmap4(_1) ->
     begin
-        _3 = length(_1),
-        [<<_3:32/unsigned>>,
-         lists:map(fun(_2) ->
-                          enc_uint32_t(_2)
-                   end,
-                   _1)]
+    		MaxInt = lists:max(_1 ++ [0]),
+    		Count = if
+    			MaxInt < 32 -> 1;
+    			MaxInt < 64 -> 2
+    		end,
+    		Bitmap1 = lists:foldl(fun(I, Acc) ->
+    			case lists:member(I, _1) of
+	    			true -> <<1:1, Acc/bitstring>>;
+	    			false -> <<0:1, Acc/bitstring>>
+	    		end
+	    	end, <<>>, lists:seq(0,Count*32-1)),
+	    	Bitmap2 = case Bitmap1 of
+	    		<<A:4/binary, B:4/binary>> -> <<B/binary, A/binary>>;
+	    		_ -> Bitmap1
+	    	end,
+        iolist_to_binary([<<Count:32/unsigned>>, Bitmap2])
     end.
 
 dec_bitmap4(_1, _2) ->
     begin
-        <<_:_2/binary,_3:32/unsigned,_/binary>> = _1,
-        map_elem(fun(_4, _5) ->
-                        dec_uint32_t(_4, _5)
-                 end,
-                 _1,
-                 _2 + 4,
-                 infinity, _3)
+        <<_:_2/binary, Count:32/unsigned, Bin/binary>> = _1,
+        ByteCount = Count*4,
+        <<Bits1:ByteCount/binary, Rest/binary>> = Bin,
+        Bits2 = case Bits1 of
+        	<<A:4/binary, B:4/binary>> -> <<B/binary, A/binary>>;
+        	_ -> Bits1
+        end,
+        BitFlags = lists:reverse([Bit || <<Bit:1>> <= Bits2 ]),
+       	DirtyBitmap = lists:zipwith(fun
+       		(_Num, 0) -> undefined;
+       		(Num, 1) -> Num
+       	end, lists:seq(0, Count*32 - 1), BitFlags),
+       	Bitmap = [Num || Num <- DirtyBitmap, is_integer(Num)],
+       	{Bitmap, size(_1) - size(Rest)}
     end.
+
+
+dec_fattr4_bitmap4(_1, _2) ->
+  {_3, _4} = dec_bitmap4(_1, _2),
+  Tags = [dec_fattr4_tag(Int) || Int <- _3],
+  {Tags, _4}.
+
 
 enc_offset4(_1) ->
     enc_uint64_t(_1).
@@ -1582,7 +1606,7 @@ dec_specdata4(_1, _2) ->
     end.
 
 enc_fattr4_supported_attrs(_1) ->
-    enc_bitmap4(_1).
+    enc_bitmap4([enc_fattr4_tag(Tag) || Tag <- _1]).
 
 dec_fattr4_supported_attrs(_1, _2) ->
     dec_bitmap4(_1, _2).
@@ -1593,8 +1617,21 @@ enc_fattr4_type(_1) ->
 dec_fattr4_type(_1, _2) ->
     dec_nfs_ftype4(_1, _2).
 
-enc_fattr4_fh_expire_type(_1) ->
-    enc_uint32_t(_1).
+enc_fattr4_fh_expire_type(_1) when is_integer(_1) ->
+    enc_uint32_t(_1);
+
+enc_fattr4_fh_expire_type(_1) when is_list(_1) ->
+	Int = lists:foldl(fun(Tag, Acc) ->
+		Acc bor case Tag of
+			persistent -> 0;
+			noexpire_with_open -> 1;
+			volatile_any -> 2;
+			vol_migration -> 4;
+			vol_rename -> 8
+		end
+	end, 0, _1),
+	enc_uint32_t(Int).
+
 
 dec_fattr4_fh_expire_type(_1, _2) ->
     dec_uint32_t(_1, _2).
@@ -2170,8 +2207,71 @@ dec_attrlist4(_1, _2) ->
 enc_fattr4(_1) ->
     case _1 of
         {_3, _2} ->
-            [enc_bitmap4(_3), enc_attrlist4(_2)]
+            [enc_bitmap4(_3), enc_attrlist4(_2)];
+        _ when is_list(_1) ->
+        	Tags = [enc_fattr4_tag(Tag) || {Tag, _} <- _1],
+        	Attrs = [enc_fattr4_value(Tag, Value) || {Tag, Value} <- _1],
+        	[enc_bitmap4(Tags), enc_attrlist4(Attrs)]
     end.
+
+
+enc_fattr4_value(supported_attrs, Value) -> enc_fattr4_supported_attrs(Value);
+enc_fattr4_value(type, Value) -> enc_fattr4_type(Value);
+enc_fattr4_value(fh_expire_type, Value) -> enc_fattr4_fh_expire_type(Value);
+enc_fattr4_value(change, Value) -> enc_fattr4_change(Value);
+enc_fattr4_value(size, Value) -> enc_fattr4_size(Value);
+enc_fattr4_value(link_support, Value) -> enc_fattr4_link_support(Value);
+enc_fattr4_value(symlink_support, Value) -> enc_fattr4_symlink_support(Value);
+enc_fattr4_value(named_attr, Value) -> enc_fattr4_named_attr(Value);
+enc_fattr4_value(fsid, Value) -> enc_fattr4_fsid(Value);
+enc_fattr4_value(unique_handles, Value) -> enc_fattr4_unique_handles(Value);
+enc_fattr4_value(lease_time, Value) -> enc_fattr4_lease_time(Value);
+enc_fattr4_value(rdattr_error, Value) -> enc_fattr4_rdattr_error(Value);
+enc_fattr4_value(acl, Value) -> enc_fattr4_acl(Value);
+enc_fattr4_value(aclsupport, Value) -> enc_fattr4_aclsupport(Value);
+enc_fattr4_value(archive, Value) -> enc_fattr4_archive(Value);
+enc_fattr4_value(cansettime, Value) -> enc_fattr4_cansettime(Value);
+enc_fattr4_value(case_insensitive, Value) -> enc_fattr4_case_insensitive(Value);
+enc_fattr4_value(case_preserving, Value) -> enc_fattr4_case_preserving(Value);
+enc_fattr4_value(chown_restricted, Value) -> enc_fattr4_chown_restricted(Value);
+enc_fattr4_value(filehandle, Value) -> enc_fattr4_filehandle(Value);
+enc_fattr4_value(fileid, Value) -> enc_fattr4_fileid(Value);
+enc_fattr4_value(files_avail, Value) -> enc_fattr4_files_avail(Value);
+enc_fattr4_value(files_free, Value) -> enc_fattr4_files_free(Value);
+enc_fattr4_value(files_total, Value) -> enc_fattr4_files_total(Value);
+enc_fattr4_value(fs_locations, Value) -> enc_fattr4_fs_locations(Value);
+enc_fattr4_value(hidden, Value) -> enc_fattr4_hidden(Value);
+enc_fattr4_value(homogeneous, Value) -> enc_fattr4_homogeneous(Value);
+enc_fattr4_value(maxfilesize, Value) -> enc_fattr4_maxfilesize(Value);
+enc_fattr4_value(maxname, Value) -> enc_fattr4_maxname(Value);
+enc_fattr4_value(maxlink, Value) -> enc_fattr4_maxlink(Value);
+enc_fattr4_value(maxread, Value) -> enc_fattr4_maxread(Value);
+enc_fattr4_value(maxwrite, Value) -> enc_fattr4_maxwrite(Value);
+enc_fattr4_value(mimetype, Value) -> enc_fattr4_mimetype(Value);
+enc_fattr4_value(mode, Value) -> enc_fattr4_mode(Value);
+enc_fattr4_value(no_trunc, Value) -> enc_fattr4_no_trunc(Value);
+enc_fattr4_value(numlinks, Value) -> enc_fattr4_numlinks(Value);
+enc_fattr4_value(owner, Value) -> enc_fattr4_owner(Value);
+enc_fattr4_value(owner_group, Value) -> enc_fattr4_owner_group(Value);
+enc_fattr4_value(quota_avail_hard, Value) -> enc_fattr4_quota_avail_hard(Value);
+enc_fattr4_value(quota_avail_soft, Value) -> enc_fattr4_quota_avail_soft(Value);
+enc_fattr4_value(quota_used, Value) -> enc_fattr4_quota_used(Value);
+enc_fattr4_value(rawdev, Value) -> enc_fattr4_rawdev(Value);
+enc_fattr4_value(space_avail, Value) -> enc_fattr4_space_avail(Value);
+enc_fattr4_value(space_free, Value) -> enc_fattr4_space_free(Value);
+enc_fattr4_value(space_total, Value) -> enc_fattr4_space_total(Value);
+enc_fattr4_value(space_used, Value) -> enc_fattr4_space_used(Value);
+enc_fattr4_value(system, Value) -> enc_fattr4_system(Value);
+enc_fattr4_value(time_access, Value) -> enc_fattr4_time_access(Value);
+enc_fattr4_value(time_access_set, Value) -> enc_fattr4_time_access_set(Value);
+enc_fattr4_value(time_backup, Value) -> enc_fattr4_time_backup(Value);
+enc_fattr4_value(time_create, Value) -> enc_fattr4_time_create(Value);
+enc_fattr4_value(time_delta, Value) -> enc_fattr4_time_delta(Value);
+enc_fattr4_value(time_metadata, Value) -> enc_fattr4_time_metadata(Value);
+enc_fattr4_value(time_modify, Value) -> enc_fattr4_time_modify(Value);
+enc_fattr4_value(time_modify_set, Value) -> enc_fattr4_time_modify_set(Value);
+enc_fattr4_value(mounted_on_fileid, Value) -> enc_fattr4_mounted_on_fileid(Value).
+
 
 dec_fattr4(_1, _2) ->
     begin
@@ -2724,9 +2824,140 @@ enc_GETATTR4args(_1) ->
 
 dec_GETATTR4args(_1, _2) ->
     begin
-        {_3, _4} = dec_bitmap4(_1, _2),
+    		<<_:_2/binary, _/binary>> = _1,
+        {_3, _4} = dec_fattr4_bitmap4(_1, _2),
         {{_3}, _4}
     end.
+
+
+
+
+
+dec_fattr4_tag(Num) ->
+	case Num of
+		0 -> supported_attrs;
+		1 -> type;
+		2 -> fh_expire_type;
+		3 -> change;
+		4 -> size;
+		5 -> link_support;
+		6 -> symlink_support;
+		7 -> named_attr;
+		8 -> fsid;
+		9 -> unique_handles;
+		10 -> lease_time;
+		11 -> rdattr_error;
+		12 -> acl;
+		13 -> aclsupport;
+		14 -> archive;
+		15 -> cansettime;
+		16 -> case_insensitive;
+		17 -> case_preserving;
+		18 -> chown_restricted;
+		19 -> filehandle;
+		20 -> fileid;
+		21 -> files_avail;
+		22 -> files_free;
+		23 -> files_total;
+		24 -> fs_locations;
+		25 -> hidden;
+		26 -> homogeneous;
+		27 -> maxfilesize;
+		28 -> maxname;
+		29 -> maxlink;
+		30 -> maxread;
+		31 -> maxwrite;
+		32 -> mimetype;
+		33 -> mode;
+		34 -> no_trunc;
+		35 -> numlinks;
+		36 -> owner;
+		37 -> owner_group;
+		38 -> quota_avail_hard;
+		39 -> quota_avail_soft;
+		40 -> quota_used;
+		41 -> rawdev;
+		42 -> space_avail;
+		43 -> space_free;
+		44 -> space_total;
+		45 -> space_used;
+		46 -> system;
+		47 -> time_access;
+		48 -> time_access_set;
+		49 -> time_backup;
+		50 -> time_create;
+		51 -> time_delta;
+		52 -> time_metadata;
+		53 -> time_modify;
+		54 -> time_modify_set;
+		55 -> mounted_on_fileid;
+		_ -> Num
+	end.
+
+
+
+enc_fattr4_tag(Tag) ->
+	case Tag of
+		supported_attrs -> 0;
+		type -> 1;
+		fh_expire_type -> 2;
+		change -> 3;
+		size -> 4;
+		link_support -> 5;
+		symlink_support -> 6;
+		named_attr -> 7;
+		fsid -> 8;
+		unique_handles -> 9;
+		lease_time -> 10;
+		rdattr_error -> 11;
+		acl -> 12;
+		aclsupport -> 13;
+		archive -> 14;
+		cansettime -> 15;
+		case_insensitive -> 16;
+		case_preserving -> 17;
+		chown_restricted -> 18;
+		filehandle -> 19;
+		fileid -> 20;
+		files_avail -> 21;
+		files_free -> 22;
+		files_total -> 23;
+		fs_locations -> 24;
+		hidden -> 25;
+		homogeneous -> 26;
+		maxfilesize -> 27;
+		maxname -> 28;
+		maxlink -> 29;
+		maxread -> 30;
+		maxwrite -> 31;
+		mimetype -> 32;
+		mode -> 33;
+		no_trunc -> 34;
+		numlinks -> 35;
+		owner -> 36;
+		owner_group -> 37;
+		quota_avail_hard -> 38;
+		quota_avail_soft -> 39;
+		quota_used -> 40;
+		rawdev -> 41;
+		space_avail -> 42;
+		space_free -> 43;
+		space_total -> 44;
+		space_used -> 45;
+		system -> 46;
+		time_access -> 47;
+		time_access_set -> 48;
+		time_backup -> 49;
+		time_create -> 50;
+		time_delta -> 51;
+		time_metadata -> 52;
+		time_modify -> 53;
+		time_modify_set -> 54;
+		mounted_on_fileid -> 55;
+		Tag when is_integer(Tag) -> Tag
+	end.
+
+
 
 enc_GETATTR4resok(_1) ->
     case _1 of
@@ -3961,7 +4192,7 @@ dec_READDIR4args(_1, _2) ->
         {_5, _6} = dec_verifier4(_1, _4),
         {_7, _8} = dec_count4(_1, _6),
         {_9, _10} = dec_count4(_1, _8),
-        {_11, _12} = dec_bitmap4(_1, _10),
+        {_11, _12} = dec_fattr4_bitmap4(_1, _10),
         {{_3, _5, _7, _9, _11}, _12}
     end.
 
