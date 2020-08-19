@@ -23,3 +23,15 @@ ls mydirectory
 It uses excellent https://github.com/msantos/erpcgen
 
 
+Why?
+====
+
+
+There are 2 NFS servers in wild nature: kernel nfs and ganesha.
+
+None of them can work from inside docker because they require proper working openat syscall.
+openat + docker + overlayfs - no luck.
+
+This code is using only trivial erlang subset of POSIX API, so it will work everywhere.
+
+
