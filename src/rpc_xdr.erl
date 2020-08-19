@@ -36,13 +36,13 @@ dec_msg_type(_1, _2) ->
         end
     end.
 
-dec_msg_type_i2a(_4) ->
-    case _4 of
-        0 ->
-            'CALL';
-        1 ->
-            'REPLY'
-    end.
+% dec_msg_type_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'CALL';
+%         1 ->
+%             'REPLY'
+%     end.
 
 enc_reply_stat(_1) ->
     case _1 of
@@ -63,13 +63,13 @@ dec_reply_stat(_1, _2) ->
         end
     end.
 
-dec_reply_stat_i2a(_4) ->
-    case _4 of
-        0 ->
-            'MSG_ACCEPTED';
-        1 ->
-            'MSG_DENIED'
-    end.
+% dec_reply_stat_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'MSG_ACCEPTED';
+%         1 ->
+%             'MSG_DENIED'
+%     end.
 
 enc_accept_stat(_1) ->
     case _1 of
@@ -141,13 +141,13 @@ dec_reject_stat(_1, _2) ->
         end
     end.
 
-dec_reject_stat_i2a(_4) ->
-    case _4 of
-        0 ->
-            'RPC_MISMATCH';
-        1 ->
-            'AUTH_ERROR'
-    end.
+% dec_reject_stat_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'RPC_MISMATCH';
+%         1 ->
+%             'AUTH_ERROR'
+%     end.
 
 enc_auth_stat(_1) ->
     case _1 of
@@ -192,25 +192,25 @@ dec_auth_stat(_1, _2) ->
         end
     end.
 
-dec_auth_stat_i2a(_4) ->
-    case _4 of
-        0 ->
-            'AUTH_OK';
-        1 ->
-            'AUTH_BADCRED';
-        2 ->
-            'AUTH_REJECTEDCRED';
-        3 ->
-            'AUTH_BADVERF';
-        4 ->
-            'AUTH_REJECTEDVERF';
-        5 ->
-            'AUTH_TOOWEAK';
-        6 ->
-            'AUTH_INVALIDRESP';
-        7 ->
-            'AUTH_FAILED'
-    end.
+% dec_auth_stat_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'AUTH_OK';
+%         1 ->
+%             'AUTH_BADCRED';
+%         2 ->
+%             'AUTH_REJECTEDCRED';
+%         3 ->
+%             'AUTH_BADVERF';
+%         4 ->
+%             'AUTH_REJECTEDVERF';
+%         5 ->
+%             'AUTH_TOOWEAK';
+%         6 ->
+%             'AUTH_INVALIDRESP';
+%         7 ->
+%             'AUTH_FAILED'
+%     end.
 
 enc_auth_flavor(_1) ->
     case _1 of
@@ -235,15 +235,15 @@ dec_auth_flavor(_1, _2) ->
         end
     end.
 
-dec_auth_flavor_i2a(_4) ->
-    case _4 of
-        0 ->
-            'AUTH_NONE';
-        1 ->
-            'AUTH_SYS';
-        2 ->
-            'AUTH_SHORT'
-    end.
+% dec_auth_flavor_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'AUTH_NONE';
+%         1 ->
+%             'AUTH_SYS';
+%         2 ->
+%             'AUTH_SHORT'
+%     end.
 
 enc_opaque_auth(_1) ->
     case _1 of
@@ -566,7 +566,7 @@ map_elem(Fun, Bin, Off, infinity, N) ->
 map_elem(Fun, Bin, Off, Max, N) when N =< Max ->
   map_elem0(Fun, Bin, Off, N, []).
 
-map_elem0(Fun, Bin, Off, 0, L) ->
+map_elem0(_Fun, _Bin, Off, 0, L) ->
   {lists:reverse(L,[]), Off};
 map_elem0(Fun, Bin, Off, N, L) ->
   {E,Off1} = Fun(Bin, Off),

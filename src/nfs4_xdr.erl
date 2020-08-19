@@ -918,13 +918,13 @@ dec_authsys(_1, _2) ->
         end
     end.
 
-dec_authsys_i2a(_4) ->
-    case _4 of
-        0 ->
-            'AUTH_NONE';
-        1 ->
-            'AUTH_SYS'
-    end.
+% dec_authsys_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'AUTH_NONE';
+%         1 ->
+%             'AUTH_SYS'
+%     end.
 
 enc_bitmap4(_1) ->
     begin
@@ -1262,15 +1262,15 @@ dec_layouttype4(_1, _2) ->
         end
     end.
 
-dec_layouttype4_i2a(_4) ->
-    case _4 of
-        1 ->
-            'LAYOUT4_NFSV4_1_FILES';
-        2 ->
-            'LAYOUT4_OSD2_OBJECTS';
-        3 ->
-            'LAYOUT4_BLOCK_VOLUME'
-    end.
+% dec_layouttype4_i2a(_4) ->
+%     case _4 of
+%         1 ->
+%             'LAYOUT4_NFSV4_1_FILES';
+%         2 ->
+%             'LAYOUT4_OSD2_OBJECTS';
+%         3 ->
+%             'LAYOUT4_BLOCK_VOLUME'
+%     end.
 
 enc_layoutupdate4(_1) ->
     case _1 of
@@ -1381,15 +1381,15 @@ dec_layoutiomode4(_1, _2) ->
         end
     end.
 
-dec_layoutiomode4_i2a(_4) ->
-    case _4 of
-        1 ->
-            'LAYOUTIOMODE4_READ';
-        2 ->
-            'LAYOUTIOMODE4_RW';
-        3 ->
-            'LAYOUTIOMODE4_ANY'
-    end.
+% dec_layoutiomode4_i2a(_4) ->
+%     case _4 of
+%         1 ->
+%             'LAYOUTIOMODE4_READ';
+%         2 ->
+%             'LAYOUTIOMODE4_RW';
+%         3 ->
+%             'LAYOUTIOMODE4_ANY'
+%     end.
 
 enc_layout_content4(_1) ->
     case _1 of
@@ -2506,17 +2506,17 @@ dec_nfs_lock_type4(_1, _2) ->
         end
     end.
 
-dec_nfs_lock_type4_i2a(_4) ->
-    case _4 of
-        1 ->
-            'READ_LT';
-        2 ->
-            'WRITE_LT';
-        3 ->
-            'READW_LT';
-        4 ->
-            'WRITEW_LT'
-    end.
+% dec_nfs_lock_type4_i2a(_4) ->
+%     case _4 of
+%         1 ->
+%             'READ_LT';
+%         2 ->
+%             'WRITE_LT';
+%         3 ->
+%             'READW_LT';
+%         4 ->
+%             'WRITEW_LT'
+%     end.
 
 enc_ACCESS4args(_1) ->
     case _1 of
@@ -3429,15 +3429,15 @@ dec_createmode4(_1, _2) ->
         end
     end.
 
-dec_createmode4_i2a(_4) ->
-    case _4 of
-        0 ->
-            'UNCHECKED4';
-        1 ->
-            'GUARDED4';
-        2 ->
-            'EXCLUSIVE4'
-    end.
+% dec_createmode4_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'UNCHECKED4';
+%         1 ->
+%             'GUARDED4';
+%         2 ->
+%             'EXCLUSIVE4'
+%     end.
 
 enc_createhow4(_1) ->
     case _1 of
@@ -3543,13 +3543,13 @@ dec_limit_by4(_1, _2) ->
         end
     end.
 
-dec_limit_by4_i2a(_4) ->
-    case _4 of
-        1 ->
-            'NFS_LIMIT_SIZE';
-        2 ->
-            'NFS_LIMIT_BLOCKS'
-    end.
+% dec_limit_by4_i2a(_4) ->
+%     case _4 of
+%         1 ->
+%             'NFS_LIMIT_SIZE';
+%         2 ->
+%             'NFS_LIMIT_BLOCKS'
+%     end.
 
 enc_nfs_modified_limit4(_1) ->
     case _1 of
@@ -3613,15 +3613,15 @@ dec_open_delegation_type4(_1, _2) ->
         end
     end.
 
-dec_open_delegation_type4_i2a(_4) ->
-    case _4 of
-        0 ->
-            'OPEN_DELEGATE_NONE';
-        1 ->
-            'OPEN_DELEGATE_READ';
-        2 ->
-            'OPEN_DELEGATE_WRITE'
-    end.
+% dec_open_delegation_type4_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'OPEN_DELEGATE_NONE';
+%         1 ->
+%             'OPEN_DELEGATE_READ';
+%         2 ->
+%             'OPEN_DELEGATE_WRITE'
+%     end.
 
 enc_open_claim_type4(_1) ->
     case _1 of
@@ -3662,23 +3662,23 @@ dec_open_claim_type4(_1, _2) ->
         end
     end.
 
-dec_open_claim_type4_i2a(_4) ->
-    case _4 of
-        0 ->
-            'CLAIM_NULL';
-        1 ->
-            'CLAIM_PREVIOUS';
-        2 ->
-            'CLAIM_DELEGATE_CUR';
-        3 ->
-            'CLAIM_DELEGATE_PREV';
-        4 ->
-            'CLAIM_FH';
-        5 ->
-            'CLAIM_DELEG_CUR_FH';
-        6 ->
-            'CLAIM_DELEG_PREV_FH'
-    end.
+% dec_open_claim_type4_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'CLAIM_NULL';
+%         1 ->
+%             'CLAIM_PREVIOUS';
+%         2 ->
+%             'CLAIM_DELEGATE_CUR';
+%         3 ->
+%             'CLAIM_DELEGATE_PREV';
+%         4 ->
+%             'CLAIM_FH';
+%         5 ->
+%             'CLAIM_DELEG_CUR_FH';
+%         6 ->
+%             'CLAIM_DELEG_PREV_FH'
+%     end.
 
 enc_open_claim_delegate_cur4(_1) ->
     case _1 of
@@ -4541,15 +4541,15 @@ dec_rpc_gss_svc_t(_1, _2) ->
         end
     end.
 
-dec_rpc_gss_svc_t_i2a(_4) ->
-    case _4 of
-        1 ->
-            'RPC_GSS_SVC_NONE';
-        2 ->
-            'RPC_GSS_SVC_INTEGRITY';
-        3 ->
-            'RPC_GSS_SVC_PRIVACY'
-    end.
+% dec_rpc_gss_svc_t_i2a(_4) ->
+%     case _4 of
+%         1 ->
+%             'RPC_GSS_SVC_NONE';
+%         2 ->
+%             'RPC_GSS_SVC_INTEGRITY';
+%         3 ->
+%             'RPC_GSS_SVC_PRIVACY'
+%     end.
 
 enc_rpcsec_gss_info(_1) ->
     case _1 of
@@ -4820,15 +4820,15 @@ dec_stable_how4(_1, _2) ->
         end
     end.
 
-dec_stable_how4_i2a(_4) ->
-    case _4 of
-        0 ->
-            'UNSTABLE4';
-        1 ->
-            'DATA_SYNC4';
-        2 ->
-            'FILE_SYNC4'
-    end.
+% dec_stable_how4_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'UNSTABLE4';
+%         1 ->
+%             'DATA_SYNC4';
+%         2 ->
+%             'FILE_SYNC4'
+%     end.
 
 enc_WRITE4args(_1) ->
     case _1 of
@@ -5212,13 +5212,13 @@ dec_gddrnf4_status(_1, _2) ->
         end
     end.
 
-dec_gddrnf4_status_i2a(_4) ->
-    case _4 of
-        0 ->
-            'GDD4_OK';
-        1 ->
-            'GDD4_UNAVAIL'
-    end.
+% dec_gddrnf4_status_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'GDD4_OK';
+%         1 ->
+%             'GDD4_UNAVAIL'
+%     end.
 
 enc_GET_DIR_DELEGATION4res_non_fatal(_1) ->
     case _1 of
@@ -5962,13 +5962,13 @@ dec_secinfo_style4(_1, _2) ->
         end
     end.
 
-dec_secinfo_style4_i2a(_4) ->
-    case _4 of
-        0 ->
-            'SECINFO_STYLE4_CURRENT_FH';
-        1 ->
-            'SECINFO_STYLE4_PARENT'
-    end.
+% dec_secinfo_style4_i2a(_4) ->
+%     case _4 of
+%         0 ->
+%             'SECINFO_STYLE4_CURRENT_FH';
+%         1 ->
+%             'SECINFO_STYLE4_PARENT'
+%     end.
 
 enc_SECINFO_NO_NAME4args(_1) ->
     enc_secinfo_style4(_1).
@@ -6630,117 +6630,117 @@ dec_nfs_opnum4(_1, _2) ->
         end
     end.
 
-dec_nfs_opnum4_i2a(_4) ->
-    case _4 of
-        3 ->
-            'OP_ACCESS';
-        4 ->
-            'OP_CLOSE';
-        5 ->
-            'OP_COMMIT';
-        6 ->
-            'OP_CREATE';
-        7 ->
-            'OP_DELEGPURGE';
-        8 ->
-            'OP_DELEGRETURN';
-        9 ->
-            'OP_GETATTR';
-        10 ->
-            'OP_GETFH';
-        11 ->
-            'OP_LINK';
-        12 ->
-            'OP_LOCK';
-        13 ->
-            'OP_LOCKT';
-        14 ->
-            'OP_LOCKU';
-        15 ->
-            'OP_LOOKUP';
-        16 ->
-            'OP_LOOKUPP';
-        17 ->
-            'OP_NVERIFY';
-        18 ->
-            'OP_OPEN';
-        19 ->
-            'OP_OPENATTR';
-        20 ->
-            'OP_OPEN_CONFIRM';
-        21 ->
-            'OP_OPEN_DOWNGRADE';
-        22 ->
-            'OP_PUTFH';
-        23 ->
-            'OP_PUTPUBFH';
-        24 ->
-            'OP_PUTROOTFH';
-        25 ->
-            'OP_READ';
-        26 ->
-            'OP_READDIR';
-        27 ->
-            'OP_READLINK';
-        28 ->
-            'OP_REMOVE';
-        29 ->
-            'OP_RENAME';
-        30 ->
-            'OP_RENEW';
-        31 ->
-            'OP_RESTOREFH';
-        32 ->
-            'OP_SAVEFH';
-        33 ->
-            'OP_SECINFO';
-        34 ->
-            'OP_SETATTR';
-        35 ->
-            'OP_SETCLIENTID';
-        36 ->
-            'OP_SETCLIENTID_CONFIRM';
-        37 ->
-            'OP_VERIFY';
-        38 ->
-            'OP_WRITE';
-        39 ->
-            'OP_RELEASE_LOCKOWNER';
-        43 ->
-            'OP_CREATE_SESSION';
-        44 ->
-            'OP_DESTROY_SESSION';
-        45 ->
-            'OP_FREE_STATEID';
-        46 ->
-            'OP_GET_DIR_DELEGATION';
-        47 ->
-            'OP_GETDEVICEINFO';
-        48 ->
-            'OP_GETDEVICELIST';
-        49 ->
-            'OP_LAYOUTCOMMIT';
-        50 ->
-            'OP_LAYOUTGET';
-        51 ->
-            'OP_LAYOUTRETURN';
-        52 ->
-            'OP_SECINFO_NO_NAME';
-        53 ->
-            'OP_SEQUENCE';
-        54 ->
-            'OP_SET_SSV';
-        55 ->
-            'OP_TEST_STATEID';
-        56 ->
-            'OP_WANT_DELEGATION';
-        57 ->
-            'OP_DESTROY_CLIENTID';
-        58 ->
-            'OP_RECLAIM_COMPLETE';
-        10044 ->
-            'OP_ILLEGAL'
-    end.
+% dec_nfs_opnum4_i2a(_4) ->
+%     case _4 of
+%         3 ->
+%             'OP_ACCESS';
+%         4 ->
+%             'OP_CLOSE';
+%         5 ->
+%             'OP_COMMIT';
+%         6 ->
+%             'OP_CREATE';
+%         7 ->
+%             'OP_DELEGPURGE';
+%         8 ->
+%             'OP_DELEGRETURN';
+%         9 ->
+%             'OP_GETATTR';
+%         10 ->
+%             'OP_GETFH';
+%         11 ->
+%             'OP_LINK';
+%         12 ->
+%             'OP_LOCK';
+%         13 ->
+%             'OP_LOCKT';
+%         14 ->
+%             'OP_LOCKU';
+%         15 ->
+%             'OP_LOOKUP';
+%         16 ->
+%             'OP_LOOKUPP';
+%         17 ->
+%             'OP_NVERIFY';
+%         18 ->
+%             'OP_OPEN';
+%         19 ->
+%             'OP_OPENATTR';
+%         20 ->
+%             'OP_OPEN_CONFIRM';
+%         21 ->
+%             'OP_OPEN_DOWNGRADE';
+%         22 ->
+%             'OP_PUTFH';
+%         23 ->
+%             'OP_PUTPUBFH';
+%         24 ->
+%             'OP_PUTROOTFH';
+%         25 ->
+%             'OP_READ';
+%         26 ->
+%             'OP_READDIR';
+%         27 ->
+%             'OP_READLINK';
+%         28 ->
+%             'OP_REMOVE';
+%         29 ->
+%             'OP_RENAME';
+%         30 ->
+%             'OP_RENEW';
+%         31 ->
+%             'OP_RESTOREFH';
+%         32 ->
+%             'OP_SAVEFH';
+%         33 ->
+%             'OP_SECINFO';
+%         34 ->
+%             'OP_SETATTR';
+%         35 ->
+%             'OP_SETCLIENTID';
+%         36 ->
+%             'OP_SETCLIENTID_CONFIRM';
+%         37 ->
+%             'OP_VERIFY';
+%         38 ->
+%             'OP_WRITE';
+%         39 ->
+%             'OP_RELEASE_LOCKOWNER';
+%         43 ->
+%             'OP_CREATE_SESSION';
+%         44 ->
+%             'OP_DESTROY_SESSION';
+%         45 ->
+%             'OP_FREE_STATEID';
+%         46 ->
+%             'OP_GET_DIR_DELEGATION';
+%         47 ->
+%             'OP_GETDEVICEINFO';
+%         48 ->
+%             'OP_GETDEVICELIST';
+%         49 ->
+%             'OP_LAYOUTCOMMIT';
+%         50 ->
+%             'OP_LAYOUTGET';
+%         51 ->
+%             'OP_LAYOUTRETURN';
+%         52 ->
+%             'OP_SECINFO_NO_NAME';
+%         53 ->
+%             'OP_SEQUENCE';
+%         54 ->
+%             'OP_SET_SSV';
+%         55 ->
+%             'OP_TEST_STATEID';
+%         56 ->
+%             'OP_WANT_DELEGATION';
+%         57 ->
+%             'OP_DESTROY_CLIENTID';
+%         58 ->
+%             'OP_RECLAIM_COMPLETE';
+%         10044 ->
+%             'OP_ILLEGAL'
+%     end.
 
 enc_nfs_argop4(_1) ->
     case _1 of
@@ -7510,15 +7510,15 @@ dec_nfs_cb_opnum4(_1, _2) ->
         end
     end.
 
-dec_nfs_cb_opnum4_i2a(_4) ->
-    case _4 of
-        3 ->
-            'OP_CB_GETATTR';
-        4 ->
-            'OP_CB_RECALL';
-        10044 ->
-            'OP_CB_ILLEGAL'
-    end.
+% dec_nfs_cb_opnum4_i2a(_4) ->
+%     case _4 of
+%         3 ->
+%             'OP_CB_GETATTR';
+%         4 ->
+%             'OP_CB_RECALL';
+%         10044 ->
+%             'OP_CB_ILLEGAL'
+%     end.
 
 enc_nfs_cb_argop4(_1) ->
     case _1 of
@@ -7653,7 +7653,7 @@ map_elem(Fun, Bin, Off, infinity, N) ->
 map_elem(Fun, Bin, Off, Max, N) when N =< Max ->
   map_elem0(Fun, Bin, Off, N, []).
 
-map_elem0(Fun, Bin, Off, 0, L) ->
+map_elem0(_Fun, _Bin, Off, 0, L) ->
   {lists:reverse(L,[]), Off};
 map_elem0(Fun, Bin, Off, N, L) ->
   {E,Off1} = Fun(Bin, Off),

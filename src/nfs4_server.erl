@@ -3,8 +3,8 @@
 -include_lib("kernel/include/file.hrl").
 -include("nfs4.hrl").
 
--export([start_link/4]).
--export([init_server/3, handle_info/2, terminate/2]).
+-export([start_link/4, start_link/1]).
+-export([init_server/4, init/1, handle_info/2, terminate/2]).
 
 -record(state, {
 	port,
@@ -12,7 +12,7 @@
 	socket,
 
 	%% logic
-	opened,
+	opened_files = [],
 	root,
 	clientid,
 	title,
@@ -23,23 +23,39 @@
 }).
 
 -define(ROOT, <<".">>).
+-define(HANDLE_OFFSET, 10000000).
+
+start_link(ListenerPid, Socket, Transport, #{} = Opts) ->
+  proc_lib:start_link(?MODULE, init_server, [ListenerPid, Transport, Socket, Opts]).
 
 
-start_link(ListenerPid, Socket, Transport, []) ->
-  proc_lib:start_link(?MODULE, init_server, [ListenerPid, Transport, Socket]).
-
-
-init_server(ListenerPid, Transport, Socket) ->
+init_server(ListenerPid, ranch_tcp = _Transport, Socket, #{} = Opts) ->
   proc_lib:init_ack({ok, self()}),
   ranch:accept_ack(ListenerPid),
-  Transport:setopts(Socket, [{active,once},binary,{packet,sunrm}]),
+  init2(Opts#{socket => Socket}).
+
+
+% This function is only for test launch without ranch. Not for production use
+start_link(#{} = Opts) ->
+	gen_server:start_link(?MODULE, [Opts], []).
+
+init([#{} = Opts]) ->
+  proc_lib:init_ack({ok, self()}),
+	receive
+		{shoot, Socket} -> init2(Opts#{socket => Socket})
+	after
+		1000 -> error(start_timeout)
+	end.
+
+
+init2(#{socket := Socket, root := Root} = _Opts) ->
+  inet:setopts(Socket, [{active,once},binary,{packet,sunrm}]),
   [_, Pid1,Pid2] = string:tokens(pid_to_list(self()),"<.>"),
-  Instanceid = list_to_integer(Pid1) *10000000,
+  Instanceid = list_to_integer(Pid1) * ?HANDLE_OFFSET,
   ClientId = list_to_integer(Pid2) bsl 32 + list_to_integer(Pid1), 
-  {ok, Cwd} = file:get_cwd(),
   State = #state{
   	socket = Socket,
-  	root = Cwd,
+  	root = Root,
   	instanceid = Instanceid,
   	clientid = ClientId
   },
@@ -162,7 +178,7 @@ handle_one_call('OP_PUTROOTFH', _, Ctx, #state{} = S) ->
 
 handle_one_call('OP_GETATTR', {RequestedAttrs}, #ctx{path = Path} = Ctx, #state{root = Root} = S) ->
 	EffectivePath = filename:join(Root, Path),
-	case file:read_file_info(EffectivePath) of
+	case file:read_link_info(EffectivePath) of
 		{ok, #file_info{} = FileInfo} ->
 			Attrs = getattr_on_file_info(RequestedAttrs, FileInfo, Ctx),
 			{reply, {'NFS4_OK', {Attrs}}, Ctx, S};
@@ -178,30 +194,29 @@ handle_one_call('OP_GETFH', _, #ctx{path = Path} = Ctx, #state{} = S) ->
 handle_one_call('OP_PUTFH', {FH}, #ctx{} = Ctx, #state{handles = Handles} = S) ->
 	case lists:keyfind(FH, 2, Handles) of
 		false ->
-			?LOG_ERROR("stale fh ~p", [FH]),
-			{error, {'NFS4ERR_STALE'}, Ctx#ctx{status = 'NFS4ERR_STALE'}, S};
+			?LOG_ERROR("expired fh ~p", [FH]),
+			{error, {'NFS4ERR_FHEXPIRED'}, Ctx#ctx{status = 'NFS4ERR_FHEXPIRED'}, S};
 		{Path, _} ->
 			% ?LOG_NOTICE("cd ~p ~p", [Path, FH]),
 			{reply, {'NFS4_OK'}, Ctx#ctx{fh = FH, path = Path}, S}
 	end;
 
-handle_one_call('OP_LOOKUP', {Segment}, #ctx{path = Path} = Ctx, #state{root = Root} = S) ->
+handle_one_call('OP_LOOKUP', {Segment}, #ctx{path = Path} = Ctx, #state{} = S) ->
 	false = Segment == <<"..">>,
 	nomatch = binary:match(Segment,<<"/">>),
 	NewPath = filename:join(Path, Segment),
-	EffectivePath = filename:join([Root, Path, Segment]),
-	case file:read_file_info(EffectivePath) of
+	EffectivePath = filename:join([effective_path(Path, S), Segment]),
+	case file:read_link_info(EffectivePath) of
 		{ok, _} ->
 			{FH, S1} = find_or_alloc_fh(NewPath, S),
 			{reply, {'NFS4_OK'}, Ctx#ctx{path = NewPath, fh = FH}, S1};
-		{error, E} ->
-			?LOG_ERROR("~p ~s / ~s / ~s", [E, Root, Path, Segment]),
+		{error, _E} ->
+			% ?LOG_ERROR("~p ~s / ~s / ~s", [E, S#state.root, Path, Segment]),
 			{error, {'NFS4ERR_NOENT'}, Ctx#ctx{status = 'NFS4ERR_NOENT'}, S}
 	end;
 
 handle_one_call('OP_OPEN', Args, #ctx{path = Path} = Ctx, #state{} = S) ->
 	{_Seq, _ShareAccess, _ShareDeny, _Owner, _Openhow, OpenClaim} = Args,
-	io:format("open_args: ~p\n", [Args]),
 	{'CLAIM_NULL', Segment} = OpenClaim,
 	SubPath = filename:join(Path, Segment),
 	case find_or_open(SubPath, S) of
@@ -215,6 +230,12 @@ handle_one_call('OP_OPEN', Args, #ctx{path = Path} = Ctx, #state{} = S) ->
 			},
 			{FH, S2} = find_or_alloc_fh(SubPath, S1),			
 			{reply, {'NFS4_OK',OpenOk}, Ctx#ctx{fh = FH, path = SubPath}, S2};
+		{error, symlink} ->
+			{error, {'NFS4ERR_SYMLINK',void}, Ctx#ctx{status = 'NFS4ERR_SYMLINK'}, S};
+		{error, isdir} ->
+			{error, {'NFS4ERR_ISDIR',void}, Ctx#ctx{status = 'NFS4ERR_ISDIR'}, S};
+		{error, other_type} ->
+			{error, {'NFS4ERR_WRONG_TYPE',void}, Ctx#ctx{status = 'NFS4ERR_WRONG_TYPE'}, S};
 		{error, _} ->
 			{error, {'NFS4ERR_NOENT',void}, Ctx#ctx{status = 'NFS4ERR_NOENT'}, S}
 	end;
@@ -230,25 +251,37 @@ handle_one_call('OP_CLOSE', {_Seq, {_Seq2, StateId} = St}, #ctx{} = Ctx, #state{
 	end;
 
 
-handle_one_call('OP_READDIR', Args, #ctx{path = Path} = Ctx, #state{root = Root} = S) ->
-	EffectivePath = iolist_to_binary(filename:join([Root, Path])),
+handle_one_call('OP_READDIR', Args, #ctx{path = Path} = Ctx, #state{} = S) ->
+	EffectivePath = iolist_to_binary(effective_path(Path, S)),
 	List = filelib:wildcard("*", binary_to_list(EffectivePath)),
 	{Cookie, _, _Limit1, _Limit2, RequestedAttrs} = Args,
-	%Cookie = 769668192873268725,
 	Verifier = <<0:64>>,
-	{DirList, S3} = lists:foldr(fun(Name, {Tail, S1}) ->
-		case file:read_file_info(filename:join(EffectivePath,Name)) of
-			{ok, FileInfo} ->
-				VPath = filename:join(Path,Name),
-				{FH, S2} = find_or_alloc_fh(VPath, S1),
-				Attrs = getattr_on_file_info(RequestedAttrs, FileInfo, Ctx#ctx{path = VPath, fh = FH}),
-				{{Cookie, Name, Attrs, Tail}, S2};
-			{error, _} ->
-				{Tail, S1}
-		end
-	end, {void, S}, List),
+	StartOffset = 3,
+	{DirList, S3, _X} = lists:foldr(fun
+		(_, {Tail, S1, N}) when N =< Cookie ->
+			{Tail, S1, N};
+		(Name, {Tail, S1, N}) ->
+			VPath = filename:join(Path,Name),
+			case file:read_link_info(effective_path(VPath,S)) of
+				{ok, FileInfo} ->
+					{FH, S2} = find_or_alloc_fh(VPath, S1),
+					Attrs = getattr_on_file_info(RequestedAttrs, FileInfo, Ctx#ctx{path = VPath, fh = FH}),
+					{{N, Name, Attrs, Tail}, S2, N-1};
+				{error, _} ->
+					{Tail, S1, N}
+			end
+	end, {void, S, StartOffset+length(List)}, List),
 	% io:format("dirlist: ~p, ~p", [S3#state.handles, List]),
 	{reply, {'NFS4_OK', {Verifier, {DirList,true}}}, Ctx, S3};
+
+handle_one_call('OP_READLINK', _, #ctx{path = Path} = Ctx, #state{} = S) ->
+	EffectivePath = effective_path(Path, S),
+	case file:read_link(EffectivePath) of
+		{ok, Link} ->
+			{reply, {'NFS4_OK', {Link}}, Ctx, S};
+		{error, _} ->
+			{error, {'NFS4ERR_NOENT', void}, Ctx#ctx{status = 'NFS4ERR_NOENT'}, S}
+	end;
 
 handle_one_call('OP_RENEW', _, #ctx{} = Ctx, #state{} = S) ->
 	{reply, {'NFS4_OK'}, Ctx, S};
@@ -266,41 +299,67 @@ handle_one_call('OP_READ', {{_,StateId}, Offset, Count}, #ctx{} = Ctx, #state{} 
 			{error, {'NFS4ERR_IO', vpid}, Ctx#ctx{status = 'NFS4ERR_IO'}, S}
 	end;
 
-handle_one_call(Cmd, Args, Ctx, #state{} = S) ->
-	io:format("unknown ~p(~p)\n", [Cmd, Args]),
-	{reply, {'NFS4_OK'}, Ctx, S}.
+handle_one_call(_Cmd, _Args, Ctx, #state{} = S) ->
+	?LOG_ERROR("~s(~p) unknown", [_Cmd, _Args]),
+	{reply, {'NFS4ERR_PERM', void}, Ctx#ctx{status = 'NFS4ERR_PERM'}, S}.
 
 
 
+effective_path(Path, #state{root = Root}) ->
+	filename:join([Root, Path]).
 
-find_or_open(SubPath, #state{root = Root} = S) ->
-	EffectivePath = filename:join([Root, SubPath]),
-	case file:open(EffectivePath, [read,binary]) of
-		{ok, F} ->
-			File = #file{
-				effective_path = EffectivePath,
-				path = SubPath,
-				f = F,
-				seq = 1,
-				stateid = crypto:strong_rand_bytes(12)
-			},
-			{ok, File, S#state{opened = File}};
-		{error, E} ->
-			{error, E}
+
+find_or_open(SubPath, #state{opened_files = Files} = S) ->
+	case lists:keyfind(SubPath, #file.path, Files) of
+		false ->
+			open_file(SubPath, S);
+		#file{} = File ->
+			{ok, File, S}
 	end.
 
-close_file(StateId, #state{opened = Opened} = S) ->
-	case Opened of
+open_file(SubPath, #state{opened_files = Files} = S) ->
+	EffectivePath = effective_path(SubPath, S),
+	case file:read_link_info(EffectivePath) of
+		{ok, #file_info{type = regular}} -> 
+			case file:open(EffectivePath, [read,binary]) of
+				{ok, F} ->
+					File = #file{
+						effective_path = EffectivePath,
+						path = SubPath,
+						f = F,
+						seq = 1,
+						stateid = crypto:strong_rand_bytes(12)
+					},
+					{ok, File, S#state{opened_files = [File|Files]}};
+				{error, E} ->
+					{error, E}
+			end;
+		{ok, #file_info{type = directory}} ->
+			{error, isdir};
+		{ok, #file_info{type = symlink}} ->
+			{error, symlink};
+		{ok, #file_info{}} ->
+			{error, other_type};
+		{error, E1} ->
+			{error, E1}
+	end.
+
+
+
+close_file(StateId, #state{opened_files = Opened} = S) ->
+	case lists:keyfind(StateId, #file.stateid, Opened) of
+		false -> 
+			{error, enoent};
 		#file{f = F, stateid = StateId, path = SubPath} ->
 			NewSubPath = filename:dirname(SubPath),
 			file:close(F),
-			{ok, NewSubPath, S#state{opened = undefined}};
-		_ ->
-			{error, enoent}
+			Opened1 = lists:keydelete(StateId, #file.stateid, Opened),
+			{ok, NewSubPath, S#state{opened_files = Opened1}}
 	end.
 
-pread(StateId, Offset, Count, #state{opened = Opened}) ->
-	case Opened of
+
+pread(StateId, Offset, Count, #state{opened_files = Opened}) ->
+	case lists:keyfind(StateId, #file.stateid, Opened) of
 		#file{f = F, stateid = StateId} ->
 			file:pread(F, Offset, Count);
 		_ ->
@@ -340,6 +399,7 @@ getattr_on_file_info(RequestedAttrs, FileInfo, #ctx{path = Path, fh = FH}) ->
 			T = case Type of
 				device -> 'NF4BLK';
 				directory -> 'NF4DIR';
+				symlink -> 'NF4LNK';
 				_ -> 'NF4REG'
 			end,
 			[{type, T}];

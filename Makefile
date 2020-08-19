@@ -3,5 +3,5 @@ all:
 
 
 run:
-	ERL_LIBS=../flussonic/_build/default/lib:_build/default/lib ./server.erl
+	./server.erl
 
